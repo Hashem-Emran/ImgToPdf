@@ -40,7 +40,62 @@ class ImageToPDFConverter:
                     self.image_paths.append(f)
                     self.select_images_listbox.insert(tk.END, os.path.basename(f))
 
-  
+    def convert_to_pdf(self):
+        if not self.image_paths:
+            messagebox.showwarning("No Images", "Please select at least one image.")
+            return
+
+        output_name = self.output_pdf_name.get().strip()
+        if not output_name:
+            messagebox.showwarning("Missing Name", "Please enter a name for the output PDF.")
+            return
+
+        if not output_name.lower().endswith(".pdf"):
+            output_name += ".pdf"
+
+        # Ask where to save
+        output_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf",
+            initialfile=output_name,
+            filetypes=[("PDF files", "*.pdf")],
+            title="Save PDF As"
+        )
+        if not output_path:
+            return
+
+        try:
+            pdf_images = []
+
+            # A4 page size in pixels (at 300 DPI)
+            a4_width, a4_height = 2480, 3508
+
+            for img_path in self.image_paths:
+                img = Image.open(img_path).convert("RGB")
+
+                # Resize to fit A4 while keeping aspect ratio
+                img.thumbnail((a4_width, a4_height), Image.Resampling.LANCZOS)
+
+                # Create blank white A4 background
+                background = Image.new("RGB", (a4_width, a4_height), (255, 255, 255))
+
+                # Center the image
+                x = (a4_width - img.width) // 2
+                y = (a4_height - img.height) // 2
+                background.paste(img, (x, y))
+
+                pdf_images.append(background)
+
+            # Save to PDF
+            pdf_images[0].save(output_path, save_all=True, append_images=pdf_images[1:])
+            messagebox.showinfo("Success", f"PDF created successfully:\n{output_path}")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to convert images.\n{e}")
+
+    def clear_list(self):
+        self.image_paths.clear()
+        self.select_images_listbox.delete(0, tk.END)
+
 
 def main():
     root = tk.Tk()
